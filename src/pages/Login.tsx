@@ -27,12 +27,16 @@ export default function Login() {
       <div className="flex items-center justify-center p-8 bg-card">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-              <Package className="w-10 h-10 text-primary-foreground" />
+            <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-secondary" opacity="0.9"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"/>
+              </svg>
             </div>
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-foreground">Valmet</h1>
-              <p className="text-sm text-muted-foreground">Sistema de Estoque</p>
+              <h1 className="text-3xl font-bold text-foreground tracking-wide">TECNOTOOLING</h1>
+              <p className="text-sm text-muted-foreground">Sistema de Gerenciamento de Estoque</p>
             </div>
           </div>
 
@@ -64,13 +68,17 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="flex items-center justify-center gap-2 pt-8">
+          <div className="flex items-center justify-center gap-3 pt-8">
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Package className="w-8 h-8 text-primary" />
+              <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-secondary" opacity="0.9"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"/>
+              </svg>
             </div>
             <div>
-              <p className="text-xl font-bold text-foreground">Valmet</p>
-              <p className="text-xs text-muted-foreground">FORWARD</p>
+              <p className="text-xl font-bold text-foreground tracking-wide">TECNOTOOLING</p>
+              <p className="text-xs text-muted-foreground">Gerando Soluções</p>
             </div>
           </div>
         </div>

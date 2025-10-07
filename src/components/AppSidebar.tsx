@@ -33,13 +33,17 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <Package className="w-6 h-6 text-sidebar-primary-foreground" />
+            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-sidebar-primary-foreground" opacity="0.8"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sidebar-primary-foreground"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sidebar-primary-foreground"/>
+            </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">Valmet</h1>
-            <p className="text-xs text-sidebar-foreground/70">Estoque</p>
+            <h1 className="text-lg font-bold text-sidebar-foreground tracking-wide">TECNOTOOLING</h1>
+            <p className="text-xs text-sidebar-foreground/70">Gerenciamento de Estoque</p>
           </div>
         </div>
       </SidebarHeader>
