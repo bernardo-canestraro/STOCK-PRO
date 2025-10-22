@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/produtos", (req, res) => {
-  db.query("SELECT * FROM produtos", (err, results) => {
+  db.query("SELECT * FROM Produto", (err, results) => {
     if (err) res.status(500).send("Erro ao buscar produtos");
     else res.json(results);
   });

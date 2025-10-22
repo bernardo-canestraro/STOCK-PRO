@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,16 +21,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const produtos = [
-  { id: 1, nome: "Parafuso M10", codigo: "PRF-001", quantidade: 450, minimo: 100, status: "ok" },
-  { id: 2, nome: "Porca M10", codigo: "PRC-001", quantidade: 380, minimo: 100, status: "ok" },
-  { id: 3, nome: "Arruela 10mm", codigo: "ARR-001", quantidade: 85, minimo: 100, status: "baixo" },
-  { id: 4, nome: "Parafuso M8", codigo: "PRF-002", quantidade: 520, minimo: 150, status: "ok" },
-  { id: 5, nome: "Porca M8", codigo: "PRC-002", quantidade: 25, minimo: 150, status: "critico" },
-];
+// const produtos = [
+//   { id: 1, nome: "Parafuso M10", codigo: "PRF-001", quantidade: 450, minimo: 100, status: "ok" },
+//   { id: 2, nome: "Porca M10", codigo: "PRC-001", quantidade: 380, minimo: 100, status: "ok" },
+//   { id: 3, nome: "Arruela 10mm", codigo: "ARR-001", quantidade: 85, minimo: 100, status: "baixo" },
+//   { id: 4, nome: "Parafuso M8", codigo: "PRF-002", quantidade: 520, minimo: 150, status: "ok" },
+//   { id: 5, nome: "Porca M8", codigo: "PRC-002", quantidade: 25, minimo: 150, status: "critico" },
+// ];
 
 export default function Produtos() {
   const [busca, setBusca] = useState("");
+  const [produtos, setProdutos] = useState([]);
+
+  // 🔹 Chamada ao backend (porta 3001)
+  // useEffect(() => {
+  //   fetch("http://localhost:3001/produtos")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       //debugger
+  //       console.log("✅ Produtos do backend:", data);
+  //       setProdutos(data);
+  //     })
+  //     .catch((err) => console.error("Erro ao buscar produtos:", err));
+  // }, []);
+
+  const handleSearch  = () => {
+      fetch("http://localhost:3001/produtos")
+      .then((res) => res.json())
+      .then((data) => {
+        //debugger
+        console.log("✅ Produtos do backend:", data);
+        setProdutos(data);
+      })
+      .catch((err) => console.error("Erro ao buscar produtos:", err));
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -106,7 +130,7 @@ export default function Produtos() {
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90" onClick={handleSearch}>
               <Search className="w-4 h-4 mr-2" />
               Buscar
             </Button>
@@ -123,22 +147,34 @@ export default function Produtos() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
+                {/* <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Quantidade</TableHead>
                 <TableHead>Mínimo</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status</TableHead> */}
+                <TableHead>ID</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Unidade de Medida</TableHead>
+                <TableHead>Estoque</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {produtos.map((produto) => (
-                <TableRow key={produto.id}>
-                  <TableCell className="font-medium">{produto.codigo}</TableCell>
-                  <TableCell>{produto.nome}</TableCell>
+              {produtos.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.id}</TableCell>
+                  {/* <TableCell>{produto.nome}</TableCell>
                   <TableCell>{produto.quantidade}</TableCell>
                   <TableCell>{produto.minimo}</TableCell>
-                  <TableCell>{getStatusBadge(produto.status)}</TableCell>
+                  <TableCell>{getStatusBadge(produto.status)}</TableCell> */}
+                  {/* <TableCell>{p.id}</TableCell> */}
+                  <TableCell>{p.nome}</TableCell>
+                  <TableCell>{p.descricao}</TableCell>
+                  <TableCell>{p.preco_venda}</TableCell>
+                  <TableCell>{p.unidade_medida}</TableCell>
+                  <TableCell>{p.estoque}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon">
