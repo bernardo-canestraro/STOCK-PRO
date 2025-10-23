@@ -25,9 +25,9 @@ node server.js
 npm run dev
 ```
 
-## What technologies are used for this project?
+## Quais tecnologias são usadas neste projeto??
 
-This project is built with:
+Este projeto foi construído com:
 
 - Vite
 - TypeScript
