@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Save, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,10 +20,94 @@ import {
 import { toast } from "sonner";
 
 export default function Entrada() {
-  const [data, setData] = useState<Date>();
+  const [dataEntrada, setDataEntrada] = useState<Date>(new Date());
 
-  const handleSave = () => {
-    toast.success("Entrada registrada com sucesso!");
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [tiposEntrada, setTiposEntrada] = useState<any[]>([]);
+
+  const [idProduto, setIdProduto] = useState("");
+  const [valorUnitario, setValorUnitario] = useState("");
+  const [idTipoEntrada, setIdTipoEntrada] = useState("");
+  const [quantidade, setQuantidade] = useState("");
+  const [notaFiscal, setNotaFiscal] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
+  // ============================
+  // CARREGAR PRODUTOS & TIPO ENTRADA
+  // ============================
+  useEffect(() => {
+    fetch("http://localhost:3001/produtosDDL", { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => setProdutos(data));
+
+    fetch("http://localhost:3001/tipoEntradaDDL", { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) =>{
+         setTiposEntrada(data)
+      });
+  }, []);
+
+  // ============================
+  // AO MUDAR PRODUTO, PEGAR VALOR UNITÁRIO
+  // ============================
+  const handleProdutoChange = (value: string) => {
+    setIdProduto(value);
+
+    const produtoSelecionado = produtos.find((p) => p.IdProduto === parseInt(value));
+
+    if (produtoSelecionado) {
+      setValorUnitario(produtoSelecionado.Preco.toString());
+    }
+  };
+
+  // ============================
+  // SALVAR ENTRADA
+  // ============================
+  const handleSave = async () => {
+    if (!idProduto || !quantidade || !idTipoEntrada) {
+      toast.error("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    const body = {
+      IdProduto: idProduto,
+      Quantidade: quantidade,
+      ValorUnitario: valorUnitario,
+      DataEntrada: dataEntrada,
+      NotaFiscal: notaFiscal,
+      Observacoes: observacoes,
+      IdTipoEntrada: idTipoEntrada,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3001/entrada", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        toast.success("Entrada registrada com sucesso!");
+        limparCampos();
+      } else {
+        toast.error("Erro ao registrar entrada.");
+      }
+    } catch (error) {
+      toast.error("Falha ao conectar com o servidor.");
+    }
+  };
+
+  const limparCampos = () => {
+    setIdProduto("");
+    setValorUnitario("");
+    setQuantidade("");
+    setNotaFiscal("");
+    setObservacoes("");
+    setIdTipoEntrada("");
+    setDataEntrada(new Date());
   };
 
   return (
@@ -39,35 +123,42 @@ export default function Entrada() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
+            
+            {/* PRODUTO */}
             <div className="space-y-2">
               <Label htmlFor="produto">Produto</Label>
-              <Select>
+              <Select onValueChange={handleProdutoChange} value={idProduto}>
                 <SelectTrigger id="produto">
                   <SelectValue placeholder="Selecione o produto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="prf001">Parafuso M10 (PRF-001)</SelectItem>
-                  <SelectItem value="prc001">Porca M10 (PRC-001)</SelectItem>
-                  <SelectItem value="arr001">Arruela 10mm (ARR-001)</SelectItem>
-                  <SelectItem value="prf002">Parafuso M8 (PRF-002)</SelectItem>
+                  {produtos.map((p) => (
+                    <SelectItem key={p.IdProduto} value={p.IdProduto.toString()}>
+                      {p.NomeProduto}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* TIPO DE ENTRADA */}
             <div className="space-y-2">
-              <Label htmlFor="fornecedor">Fornecedor</Label>
-              <Select>
-                <SelectTrigger id="fornecedor">
-                  <SelectValue placeholder="Selecione o fornecedor" />
+              <Label htmlFor="tipoEntrada">Tipo de Entrada</Label>
+              <Select onValueChange={setIdTipoEntrada} value={idTipoEntrada}>
+                <SelectTrigger id="tipoEntrada">
+                  <SelectValue placeholder="Selecione o tipo de entrada" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="f1">Fornecedor A</SelectItem>
-                  <SelectItem value="f2">Fornecedor B</SelectItem>
-                  <SelectItem value="f3">Fornecedor C</SelectItem>
+                  {tiposEntrada.map((t) => (
+                    <SelectItem key={t.IdTipoEntrada} value={t.IdTipoEntrada.toString()}>
+                      {t.NomeTipoEntrada}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* QUANTIDADE */}
             <div className="space-y-2">
               <Label htmlFor="quantidade">Quantidade</Label>
               <Input
@@ -75,20 +166,23 @@ export default function Entrada() {
                 type="number"
                 placeholder="0"
                 min="1"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
               />
             </div>
 
+            {/* VALOR UNITÁRIO (BLOQUEADO) */}
             <div className="space-y-2">
               <Label htmlFor="valor">Valor Unitário</Label>
               <Input
                 id="valor"
                 type="number"
-                placeholder="0,00"
-                step="0.01"
-                min="0"
+                value={valorUnitario}
+                disabled
               />
             </div>
 
+            {/* DATA DA ENTRADA (VEM PREENCIDA, MAS EDITÁVEL) */}
             <div className="space-y-2">
               <Label>Data da Entrada</Label>
               <Popover>
@@ -97,18 +191,19 @@ export default function Entrada() {
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !data && "text-muted-foreground"
+                      !dataEntrada && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {data ? format(data, "PPP", { locale: ptBR }) : "Selecione a data"}
+
+                    {format(dataEntrada, "PPP", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-popover" align="start">
                   <Calendar
                     mode="single"
-                    selected={data}
-                    onSelect={setData}
+                    selected={dataEntrada}
+                    onSelect={(d) => d && setDataEntrada(d)}
                     initialFocus
                     locale={ptBR}
                   />
@@ -116,20 +211,26 @@ export default function Entrada() {
               </Popover>
             </div>
 
+            {/* NOTA FISCAL */}
             <div className="space-y-2">
               <Label htmlFor="nf">Nota Fiscal</Label>
               <Input
                 id="nf"
                 placeholder="Número da NF"
+                value={notaFiscal}
+                onChange={(e) => setNotaFiscal(e.target.value)}
               />
             </div>
 
+            {/* OBSERVAÇÕES */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"
                 placeholder="Digite observações adicionais"
                 rows={3}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
               />
             </div>
           </div>
@@ -139,7 +240,7 @@ export default function Entrada() {
               <Save className="w-4 h-4 mr-2" />
               Salvar Entrada
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={limparCampos}>
               <Plus className="w-4 h-4 mr-2" />
               Limpar
             </Button>

@@ -20,13 +20,15 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "Entrada", url: "/entrada", icon: ArrowDownCircle },
   { title: "Saída", url: "/saida", icon: ArrowUpCircle },
   { title: "Relatórios", url: "/relatorios", icon: FileText },
+  { title: "Categorias", url: "/categorias", icon: Package },
   { title: "Usuários", url: "/usuarios", icon: Users },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Perfis", url: "/perfis", icon: Users },
+  // { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {

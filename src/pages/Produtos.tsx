@@ -20,68 +20,244 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
+import { Textarea } from "@/components/ui/textarea";
 
-// const produtos = [
-//   { id: 1, nome: "Parafuso M10", codigo: "PRF-001", quantidade: 450, minimo: 100, status: "ok" },
-//   { id: 2, nome: "Porca M10", codigo: "PRC-001", quantidade: 380, minimo: 100, status: "ok" },
-//   { id: 3, nome: "Arruela 10mm", codigo: "ARR-001", quantidade: 85, minimo: 100, status: "baixo" },
-//   { id: 4, nome: "Parafuso M8", codigo: "PRF-002", quantidade: 520, minimo: 150, status: "ok" },
-//   { id: 5, nome: "Porca M8", codigo: "PRC-002", quantidade: 25, minimo: 150, status: "critico" },
-// ];
+interface Produto {
+  IdProduto?: number;
+  NomeProduto: string;
+  Descrecao?: string;
+  CodProduto?: string;
+  Preco?: number | string;
+  UniMedida?: string;
+  EstMinimo?: number | string;
+  IdCategoriaFK?: number | string;
+  NomeCategoria?: string;
+  CdStatus?: "ativo" | "inativo" | string;
+}
+
+interface CategoriaDDL {
+  id: number;
+  nome: string;
+  IdCategoria: number;
+  NomeCategoria: string;
+}
 
 export default function Produtos() {
   const [busca, setBusca] = useState("");
-  const [produtos, setProdutos] = useState([]);
+  const [codigoBusca, setCodigoBusca] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("0");
+  const [statusFiltro, setStatusFiltro] = useState("todos");
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // 🔹 Chamada ao backend (porta 3001)
-  // useEffect(() => {
-  //   fetch("http://localhost:3001/produtos")
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       //debugger
-  //       console.log("✅ Produtos do backend:", data);
-  //       setProdutos(data);
-  //     })
-  //     .catch((err) => console.error("Erro ao buscar produtos:", err));
-  // }, []);
+  // form
+  const initialForm: Produto = {
+    NomeProduto: "",
+    Descrecao: "",
+    CodProduto: "",
+    Preco: "",
+    UniMedida: "",
+    EstMinimo: "",
+    IdCategoriaFK: "0",
+    CdStatus: "ativo",
+  };
+  const [form, setForm] = useState<Produto>(initialForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
-  const handleSearch  = () => {
-      fetch("http://localhost:3001/produtos")
+  const [categorias, setCategorias] = useState<CategoriaDDL[]>([]);
+
+  // buscar categorias
+  useEffect(() => {
+    fetch("http://localhost:3001/categoriasDDL", { method: "GET", credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        //debugger
-        console.log("✅ Produtos do backend:", data);
-        setProdutos(data);
+        setCategorias(data || []);
       })
-      .catch((err) => console.error("Erro ao buscar produtos:", err));
-  }
+      .catch((err) => console.error("Erro ao buscar categorias:", err));
+  }, []);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ok":
-        return <Badge className="bg-success">Em Estoque</Badge>;
-      case "baixo":
-        return <Badge className="bg-chart-4">Estoque Baixo</Badge>;
-      case "critico":
-        return <Badge variant="destructive">Crítico</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  // busca produtos
+  const handleSearch = () => {
+    const q = new URLSearchParams();
+    if (busca && busca.trim() !== "") q.set("nome", busca.trim());
+    if (codigoBusca && codigoBusca.trim() !== "") q.set("codigo", codigoBusca.trim());
+    if (categoriaFiltro && categoriaFiltro.trim() !== "0") q.set("categoriaId", categoriaFiltro.trim());
+    if (statusFiltro && statusFiltro !== "todos") q.set("status", statusFiltro);
+
+    const url = `http://localhost:3001/produto${q.toString() ? "?" + q.toString() : ""}`;
+
+    setLoading(true);
+    fetch(url, { method: "GET", credentials: 'include', })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setProdutos(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Erro ao buscar produtos:", err);
+        toast.error("Erro ao buscar produtos");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const openCreateForm = () => {
+    setForm(initialForm);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (p: Produto) => {
+    setForm({
+      NomeProduto: p.NomeProduto ?? "",
+      Descrecao: p.Descrecao ?? "",
+      CodProduto: p.CodProduto ?? "",
+      Preco: p.Preco ?? "",
+      UniMedida: p.UniMedida ?? "",
+      EstMinimo: p.EstMinimo ?? "",
+      IdCategoriaFK: p.IdCategoriaFK ? String(p.IdCategoriaFK) : "0",
+      CdStatus: p.CdStatus ?? "ativo",
+    });
+    setEditingId(p.IdProduto ?? null);
+    setShowForm(true);
+  };
+
+  // const handleDelete = (id?: number) => {
+  //   if (!id) return;
+  //   const confirm = window.confirm("Tem certeza que deseja excluir este produto?");
+  //   if (!confirm) return;
+
+  //   fetch(`http://localhost:3001/produtos/${id}`, { method: "DELETE" })
+  //     .then((res) => {
+  //       if (!res.ok) throw new Error("Erro ao excluir");
+  //       setProdutos((prev) => prev.filter((p) => p.IdProduto !== id));
+  //       toast.success("Produto excluído");
+  //     })
+  //     .catch((err) => {
+  //       console.error("Erro ao excluir produto:", err);
+  //       toast.error("Erro ao excluir produto");
+  //     });
+  // };
+
+  // enviar formulário
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    if (!form.NomeProduto || String(form.NomeProduto).trim() === "") {
+      toast.error("Preencha o nome do produto.");
+      return;
+    } else if (!form.Preco || String(form.Preco).trim() === "") {
+      toast.error("Preencha o preço do produto.");
+      return;
+    } else if (!form.UniMedida || String(form.UniMedida).trim() === "") {
+      toast.error("Preencha a unidade de medida do produto.");
+      return;
+    } else if (form.EstMinimo === undefined || form.EstMinimo === null || String(form.EstMinimo).trim() === "") {
+      toast.error("Preencha o estoque mínimo do produto.");
+      return;
+    } else if (form.CodProduto === undefined || form.CodProduto === null || String(form.CodProduto).trim() === "") {
+      toast.error("Preencha o código do produto.");
+      return;
+    }  else if (form.IdCategoriaFK === undefined || form.IdCategoriaFK === null || String(form.IdCategoriaFK).trim() === "") {
+      toast.error("Preencha a categoria do produto.");
+      return;
+    } 
+
+    const precoNum = Number(String(form.Preco ?? "").replace(",", "."));
+    if (isNaN(precoNum) || precoNum < 0) {
+      toast.error("Preço inválido.");
+      return;
     }
+
+    const payload: any = {
+      NomeProduto: String(form.NomeProduto).trim(),
+      Descrecao: form.Descrecao ?? "",
+      CodProduto: form.CodProduto ?? "",
+      Preco: precoNum,
+      UniMedida: form.UniMedida ?? "",
+      EstMinimo: Number(form.EstMinimo ?? 0),
+      IdCategoriaFK: form.IdCategoriaFK ? Number(form.IdCategoriaFK) : null,
+      CdStatus: form.CdStatus ?? "ativo",
+    };
+
+    if (editingId) {
+      fetch(`http://localhost:3001/produto/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((updated: Produto) => {
+          setProdutos((prev) => prev.map((p) => (p.IdProduto === editingId ? updated : p)));
+          setShowForm(false);
+          setEditingId(null);
+          toast.success("Produto atualizado");
+        })
+        .catch(() => toast.error("Erro ao atualizar produto"));
+    } else {
+      if (form.CdStatus.trim() === "0") {
+            toast.error("Não pode cadastrar um produto inativo.");
+            return;
+        }
+
+      fetch(`http://localhost:3001/produto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((created: Produto) => {
+          setProdutos((prev) => [created, ...prev]);
+          setShowForm(false);
+          toast.success("Produto criado");
+        })
+        .catch(() => toast.error("Erro ao criar produto"));
+    }
+  };
+
+  const handleClear = () => {
+    setBusca("");
+    setCodigoBusca("");
+    setCategoriaFiltro("0");
+    setStatusFiltro("todos");
+    setProdutos([]);
+  };
+
+  // normaliza o CdStatus para 'ativo' | 'inativo' | undefined
+  const normalizeStatus = (cd: any): "ativo" | "inativo" | undefined => {
+    if (cd === 1 || cd === "1" || String(cd).toLowerCase() === "ativo") return "ativo";
+    if (cd === 0 || cd === "0" || String(cd).toLowerCase() === "inativo") return "inativo";
+    return undefined;
+  };
+
+  const getStatusBadge = (CdStatus: any) => {
+    const s = normalizeStatus(CdStatus);
+    if (s === "ativo") return <Badge variant="default">Ativo</Badge>;
+    if (s === "inativo") return <Badge variant="destructive">Inativo</Badge>;
+    return <Badge variant="secondary">-</Badge>;
   };
 
   return (
     <div className="space-y-6">
+      {/* Título */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Produtos</h1>
-          <p className="text-muted-foreground">Gerenciamento de produtos do estoque</p>
+          <h1 className="text-3xl font-bold">Produtos</h1>
+          <p className="text-muted-foreground">Cadastro de produtos</p>
         </div>
-        <Button className="bg-secondary hover:bg-secondary/90">
+
+        <Button className="bg-secondary" onClick={openCreateForm}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Produto
         </Button>
       </div>
 
+      {/* Filtros */}
       <Card>
         <CardHeader>
           <CardTitle>Buscar Produto</CardTitle>
@@ -89,56 +265,61 @@ export default function Produtos() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome do Produto</Label>
-              <Input
-                id="nome"
-                placeholder="Digite o nome"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-              />
+              <Label>Nome</Label>
+              <Input value={busca} onChange={(e) => setBusca(e.target.value)} />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="codigo">Código</Label>
-              <Input id="codigo" placeholder="Digite o código" />
+              <Label>Código</Label>
+              <Input value={codigoBusca} onChange={(e) => setCodigoBusca(e.target.value)} />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoria</Label>
-              <Select>
-                <SelectTrigger id="categoria">
+              <Label>Categoria</Label>
+              <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+                <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="fixacao">Fixação</SelectItem>
-                  <SelectItem value="ferramentas">Ferramentas</SelectItem>
+                  <SelectItem value="0">Todas</SelectItem>
+                  {categorias.map((c) => (
+                    <SelectItem key={c.IdCategoria} value={String(c.IdCategoria)}>
+                      {c.NomeCategoria}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select>
-                <SelectTrigger id="status">
+              <Label htmlFor="statusFiltro">Status</Label>
+              <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as "todos" | "ativo" | "inativo")}>
+                <SelectTrigger id="statusFiltro">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="ok">Em Estoque</SelectItem>
-                  <SelectItem value="baixo">Estoque Baixo</SelectItem>
-                  <SelectItem value="critico">Crítico</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+
           <div className="flex gap-2 mt-4">
-            <Button className="bg-primary hover:bg-primary/90" onClick={handleSearch}>
+            <Button onClick={handleSearch} disabled={loading} className="bg-primary">
               <Search className="w-4 h-4 mr-2" />
-              Buscar
+              {loading ? "Buscando..." : "Buscar"}
             </Button>
-            <Button variant="outline">Limpar</Button>
+
+            <Button variant="outline" onClick={handleClear}>
+              Limpar
+            </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Lista */}
       <Card>
         <CardHeader>
           <CardTitle>Lista de Produtos</CardTitle>
@@ -147,42 +328,42 @@ export default function Produtos() {
           <Table>
             <TableHeader>
               <TableRow>
-                {/* <TableHead>Código</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Mínimo</TableHead>
-                <TableHead>Status</TableHead> */}
                 <TableHead>ID</TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>Código</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Preço</TableHead>
-                <TableHead>Unidade de Medida</TableHead>
-                <TableHead>Estoque</TableHead>
+                <TableHead>Unidade</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Est Mínimo</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {produtos.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.id}</TableCell>
-                  {/* <TableCell>{produto.nome}</TableCell>
-                  <TableCell>{produto.quantidade}</TableCell>
-                  <TableCell>{produto.minimo}</TableCell>
-                  <TableCell>{getStatusBadge(produto.status)}</TableCell> */}
-                  {/* <TableCell>{p.id}</TableCell> */}
-                  <TableCell>{p.nome}</TableCell>
-                  <TableCell>{p.descricao}</TableCell>
-                  <TableCell>{p.preco_venda}</TableCell>
-                  <TableCell>{p.unidade_medida}</TableCell>
-                  <TableCell>{p.estoque}</TableCell>
+                <TableRow key={p.IdProduto}>
+                  <TableCell>{p.IdProduto}</TableCell>
+                  <TableCell>{p.NomeProduto}</TableCell>
+                  <TableCell>{p.CodProduto}</TableCell>
+                  <TableCell>{p.Descrecao}</TableCell>
+                  <TableCell>{p.Preco}</TableCell>
+                  <TableCell>{p.UniMedida}</TableCell>
+                  <TableCell>{p.IdCategoriaFK}</TableCell>
+                  <TableCell>{p.EstMinimo}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(p.CdStatus)}
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      {/* <Button variant="ghost" size="icon" onClick={() => handleDelete(p.IdProduto)}>
                         <Trash className="w-4 h-4" />
-                      </Button>
+                      </Button> */}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -191,6 +372,125 @@ export default function Produtos() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal Form */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-6">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowForm(false)} />
+
+          <div className="relative w-full max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>{editingId ? "Editar Produto" : "Novo Produto"}</CardTitle>
+              </CardHeader>
+
+              <CardContent>
+                <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Nome</Label>
+                    <Input
+                      value={form.NomeProduto}
+                      onChange={(e) => setForm({ ...form, NomeProduto: e.target.value })}
+                      placeholder="Nome do produto"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Código</Label>
+                    <Input
+                      value={form.CodProduto}
+                      onChange={(e) => setForm({ ...form, CodProduto: e.target.value })}
+                      placeholder="Código interno"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Preço</Label>
+                    <Input
+                      value={String(form.Preco ?? "")}
+                      onChange={(e) => setForm({ ...form, Preco: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Unidade</Label>
+                    <Input
+                      value={form.UniMedida}
+                      onChange={(e) => setForm({ ...form, UniMedida: e.target.value })}
+                      placeholder="Ex: un, kg, cx"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Estoque Mínimo</Label>
+                    <Input
+                      value={String(form.EstMinimo ?? "")}
+                      onChange={(e) => setForm({ ...form, EstMinimo: e.target.value })}
+                      placeholder="Quantidade mínima"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Select
+                      value={String(form.IdCategoriaFK ?? "0")}
+                      onValueChange={(v) => setForm({ ...form, IdCategoriaFK: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Sem categoria</SelectItem>
+                        {categorias.map((c) => (
+                          <SelectItem key={c.IdCategoria} value={String(c.IdCategoria)}>
+                            {c.NomeCategoria}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                        <Label htmlFor="statusForm">Status</Label>
+                        <Select
+                            value={form.CdStatus.toString()}
+                            onValueChange={(value: "1" | "0") => setForm({ ...form, CdStatus: value })}
+                        >
+                        <SelectTrigger id="statusForm">
+                            {form.CdStatus === "1" ? "Ativo" : form.CdStatus === "0" ? "Inativo" : "Selecione o status"}
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1">Ativo</SelectItem>
+                            <SelectItem value="0">Inativo</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Descrição</Label>
+                    <Textarea
+                      value={form.Descrecao}
+                      onChange={(e) => setForm({ ...form, Descrecao: e.target.value })}
+                      placeholder="Descrição detalhada do produto"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 flex justify-end gap-2 mt-3">
+                    <Button variant="outline" onClick={() => setShowForm(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="bg-primary">
+                      {editingId ? "Salvar" : "Criar"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

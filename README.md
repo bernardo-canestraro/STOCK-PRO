@@ -16,7 +16,7 @@ npm i
 
 # Passo 2: Instale as dependências necessárias para rodar o servidor.
 npm init -y
-npm install express mysql2 cors
+npm install express mysql2 cors bcrypt express-session exceljs axios xlsx file-saver cookie-parser recharts lucide-react
 
 # Passo 3: Para rodar o servidor.
 node server.js

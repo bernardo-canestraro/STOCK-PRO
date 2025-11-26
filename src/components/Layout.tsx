@@ -13,7 +13,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <TopBar />
+          {/* <TopBar /> */}
           <main className="flex-1 bg-background p-6">
             {children}
           </main>

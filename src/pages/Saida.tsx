@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Save, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,10 +20,92 @@ import {
 import { toast } from "sonner";
 
 export default function Saida() {
-  const [data, setData] = useState<Date>();
+  const [dataSaida, setDataSaida] = useState<Date>(new Date());
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [tiposSaida, setTiposSaida] = useState<any[]>([]);
 
-  const handleSave = () => {
-    toast.success("Saída registrada com sucesso!");
+  const [idProduto, setIdProduto] = useState("");
+  const [valorUnitario, setValorUnitario] = useState("");
+  const [idTipoSaida, setIdTipoSaida] = useState("");
+  const [quantidade, setQuantidade] = useState("");
+  const [documento, setDocumento] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
+  useEffect(() => {
+    fetch("http://localhost:3001/produtosDDL", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setProdutos(data))
+      .catch(() => toast.error("Erro ao carregar produtos."));
+
+    fetch("http://localhost:3001/tipoSaidaDDL", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setTiposSaida(data))
+      .catch(() => toast.error("Erro ao carregar tipos de saída."));
+  }, []);
+
+  const handleProdutoChange = (value: string) => {
+    setIdProduto(value);
+
+    const produtoSelecionado = produtos.find((p) => p.IdProduto === parseInt(value));
+
+    if (produtoSelecionado) {
+      setValorUnitario(produtoSelecionado.Preco.toString());
+    } else {
+      setValorUnitario("");
+    }
+  };
+
+  const limparCampos = () => {
+    setIdProduto("");
+    setValorUnitario("");
+    setQuantidade("");
+    setDocumento("");
+    setObservacoes("");
+    setIdTipoSaida("");
+    setDataSaida(new Date());
+  };
+
+  const handleSave = async () => {
+    if (!idProduto || !quantidade || !idTipoSaida) {
+      toast.error("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    const body = {
+      IdProduto: idProduto,
+      Quantidade: quantidade,
+      ValorUnitario: valorUnitario,
+      DataSaida: dataSaida,
+      Documento: documento,
+      Observacoes: observacoes,
+      IdTipoSaida: idTipoSaida,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3001/saida", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+
+      const text = await response.text();
+      // backend retorna json ou texto em erro; tentamos parsear
+      let json;
+      try { json = JSON.parse(text); } catch { json = null; }
+
+      if (response.ok) {
+        toast.success("Saída registrada com sucesso!");
+        limparCampos();
+      } else {
+        const msg = json?.error || text || "Erro ao registrar saída.";
+        toast.error(msg);
+      }
+    } catch (error) {
+      toast.error("Falha ao conectar com o servidor.");
+    }
   };
 
   return (
@@ -39,36 +121,41 @@ export default function Saida() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
+            {/* PRODUTO */}
             <div className="space-y-2">
               <Label htmlFor="produto">Produto</Label>
-              <Select>
+              <Select onValueChange={handleProdutoChange} value={idProduto}>
                 <SelectTrigger id="produto">
                   <SelectValue placeholder="Selecione o produto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="prf001">Parafuso M10 (PRF-001)</SelectItem>
-                  <SelectItem value="prc001">Porca M10 (PRC-001)</SelectItem>
-                  <SelectItem value="arr001">Arruela 10mm (ARR-001)</SelectItem>
-                  <SelectItem value="prf002">Parafuso M8 (PRF-002)</SelectItem>
+                  {produtos.map((p) => (
+                    <SelectItem key={p.IdProduto} value={p.IdProduto.toString()}>
+                      {p.NomeProduto}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* TIPO DE SAÍDA */}
             <div className="space-y-2">
-              <Label htmlFor="destino">Destino/Setor</Label>
-              <Select>
-                <SelectTrigger id="destino">
-                  <SelectValue placeholder="Selecione o destino" />
+              <Label htmlFor="tipoSaida">Tipo de Saída</Label>
+              <Select onValueChange={setIdTipoSaida} value={idTipoSaida}>
+                <SelectTrigger id="tipoSaida">
+                  <SelectValue placeholder="Selecione o tipo de saída" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="s1">Produção</SelectItem>
-                  <SelectItem value="s2">Manutenção</SelectItem>
-                  <SelectItem value="s3">Montagem</SelectItem>
-                  <SelectItem value="s4">Expedição</SelectItem>
+                  {tiposSaida.map((t) => (
+                    <SelectItem key={t.IdTipoSaida} value={t.IdTipoSaida.toString()}>
+                      {t.NomeTipoSaida}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* QUANTIDADE */}
             <div className="space-y-2">
               <Label htmlFor="quantidade">Quantidade</Label>
               <Input
@@ -76,17 +163,18 @@ export default function Saida() {
                 type="number"
                 placeholder="0"
                 min="1"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
               />
             </div>
 
+            {/* VALOR UNITÁRIO (BLOQUEADO) */}
             <div className="space-y-2">
-              <Label htmlFor="responsavel">Responsável</Label>
-              <Input
-                id="responsavel"
-                placeholder="Nome do responsável"
-              />
+              <Label htmlFor="valor">Valor Unitário</Label>
+              <Input id="valor" type="number" value={valorUnitario} disabled />
             </div>
 
+            {/* DATA DA SAÍDA */}
             <div className="space-y-2">
               <Label>Data da Saída</Label>
               <Popover>
@@ -95,18 +183,18 @@ export default function Saida() {
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !data && "text-muted-foreground"
+                      !dataSaida && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {data ? format(data, "PPP", { locale: ptBR }) : "Selecione a data"}
+                    {format(dataSaida, "PPP", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-popover" align="start">
                   <Calendar
                     mode="single"
-                    selected={data}
-                    onSelect={setData}
+                    selected={dataSaida}
+                    onSelect={(d) => d && setDataSaida(d)}
                     initialFocus
                     locale={ptBR}
                   />
@@ -114,20 +202,26 @@ export default function Saida() {
               </Popover>
             </div>
 
+            {/* DOCUMENTO / NF */}
             <div className="space-y-2">
-              <Label htmlFor="requisicao">Nº Requisição</Label>
+              <Label htmlFor="documento">Documento / NF</Label>
               <Input
-                id="requisicao"
-                placeholder="Número da requisição"
+                id="documento"
+                placeholder="Número do documento"
+                value={documento}
+                onChange={(e) => setDocumento(e.target.value)}
               />
             </div>
 
+            {/* OBSERVAÇÕES */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"
                 placeholder="Digite observações adicionais"
                 rows={3}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
               />
             </div>
           </div>
@@ -135,9 +229,9 @@ export default function Saida() {
           <div className="flex gap-2 mt-6">
             <Button onClick={handleSave} className="bg-secondary hover:bg-secondary/90">
               <Save className="w-4 h-4 mr-2" />
-              Salvar Saída
+              Registrar Saída
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={limparCampos}>
               <Plus className="w-4 h-4 mr-2" />
               Limpar
             </Button>
