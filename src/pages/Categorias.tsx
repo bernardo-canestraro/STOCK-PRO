@@ -159,7 +159,7 @@ export default function Categoria() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Perfis</h1>
+          <h1 className="text-3xl font-bold text-foreground">Categoria</h1>
         </div>
         <Button className="bg-secondary hover:bg-secondary/90" onClick={openCreate}>
           <Plus className="w-4 h-4 mr-2" /> Nova Categoria
