@@ -1133,77 +1133,97 @@ app.put("/perfis/:id", requireAuth, (req, res) => {
   });
 });
 
-// ============================
-// PERFIL X PROGRAMA
-// ============================
+// =========================
+// PROGRAMA X PERFIL
+// =========================
 
-// 1) Listar Perfis
-// app.get("/perfis", (req, res) => {
-//   db.query("SELECT * FROM Perfil", (err, rows) => {
-//     if (err) return res.status(500).send("Erro ao buscar perfis");
-//     res.json(rows);
-//   });
-// });
+// LISTAR TODOS OS PERFIS (menos Admin)
+app.get("/perfisPXP", requireAuth, (req, res) => {
+    const sql = `
+        SELECT * FROM Perfis
+        WHERE CdStatus = 1 AND NomePerfil <> 'Administrador'
+    `;
 
-// 2) Listar Programas
-// app.get("/programas", requireAuth, (req, res) => {
-//   db.query("SELECT * FROM Programa", (err, rows) => {
-//     if (err) return res.status(500).send("Erro ao buscar programas");
-//     res.json(rows);
-//   });
-// });
-
-// 3) Programas permitidos de um perfil (somente keys)
-app.get("/perfis/:id/programas", requireAuth, (req, res) => {
-  const idPerfil = req.params.id;
-
-  db.query(
-    `SELECT pr.ProgramKey
-     FROM PerfilXPrograma pxp
-     JOIN Programa pr ON pxp.IdPrograma = pr.IdPrograma
-     WHERE pxp.IdPerfil = ?`,
-    [idPerfil],
-    (err, rows) => {
-      if (err) return res.status(500).send("Erro ao buscar permissões");
-      res.json(rows.map(r => r.ProgramKey));
-    }
-  );
+    db.query(sql, (err, rows) => {
+        if (err) return res.status(500).json({ erro: err });
+        res.json(rows);
+    });
 });
 
-// 4) Atualizar programas do perfil
-app.post("/perfis/:id/programas", requireAuth, (req, res) => {
-  const idPerfil = req.params.id;
-  const { programKeys } = req.body; // ex: ["dashboard","produtos"]
+// LISTAR TODOS OS PROGRAMAS
+app.get("/programasPXP", requireAuth, (req, res) => {
+    const sql = `
+        SELECT IdPrograma, NomePrograma, Title
+        FROM Programa
+        WHERE CdStatus = 1
+    `;
 
-  // Remove tudo antes de inserir
-  db.query("DELETE FROM PerfilXPrograma WHERE IdPerfil = ?", [idPerfil], err => {
-    if (err) return res.status(500).send("Erro ao limpar permissões");
-
-    if (!programKeys || programKeys.length === 0) {
-      return res.json({ message: "Permissões atualizadas" });
-    }
-
-    // Buscar IDs das programKeys
-    db.query(
-      "SELECT IdPrograma FROM Programa WHERE ProgramKey IN (?)",
-      [programKeys],
-      (err2, rows) => {
-        if (err2) return res.status(500).send("Erro ao buscar programas");
-
-        const values = rows.map(r => [idPerfil, r.IdPrograma]);
-
-        db.query(
-          "INSERT INTO PerfilXPrograma (IdPerfil, IdPrograma) VALUES ?",
-          [values],
-          (err3) => {
-            if (err3) return res.status(500).send("Erro ao inserir permissões");
-            res.json({ message: "Permissões atualizadas com sucesso" });
-          }
-        );
-      }
-    );
-  });
+    db.query(sql, (err, rows) => {
+        if (err) return res.status(500).json({ erro: err });
+        res.json(rows);
+    });
 });
+
+// LISTAR PROGRAMAS ASSOCIADOS A UM PERFIL
+app.get("/programas-perfilPXP/:idPerfil", requireAuth, (req, res) => {
+    const { idPerfil } = req.params;
+
+    const sql = `
+        SELECT IdPrograma
+        FROM ProgramaXPerfil
+        WHERE IdPerfil = ? AND CdStatus = 1
+    `;
+
+    db.query(sql, [idPerfil], (err, rows) => {
+        if (err) return res.status(500).json({ erro: err });
+        res.json(rows.map(r => r.IdPrograma));
+    });
+});
+
+// SALVAR VÍNCULOS (REGRAVA TUDO)
+app.post("/programas-perfilPXP", requireAuth, (req, res) => {
+    const { IdPerfil, Programas } = req.body;
+    const userId = req.session.userId;
+
+    if (!IdPerfil)
+        return res.status(400).json({ erro: "IdPerfil obrigatório" });
+
+    // 1) Remove todos os vínculos ativos
+    const deleteSql = `
+        UPDATE ProgramaXPerfil
+        SET CdStatus = 0, DtCancelamento = NOW(), IdCCancelamentoUsu = ?
+        WHERE IdPerfil = ? AND CdStatus = 1
+    `;
+
+    db.query(deleteSql, [userId, IdPerfil], (err) => {
+        if (err) return res.status(500).json({ erro: err });
+
+        if (!Programas || Programas.length === 0) {
+            return res.json({ sucesso: true, msg: "Vínculos removidos" });
+        }
+
+        // 2) Insere novos vínculos
+        const insertSql = `
+            INSERT INTO ProgramaXPerfil 
+            (IdPrograma, IdPerfil, IdCadastroUsu, DtCadastro, CdStatus)
+            VALUES ?
+        `;
+
+        const values = Programas.map(p => [
+            p, IdPerfil, userId, new Date(), 1
+        ]);
+
+        db.query(insertSql, [values], (err2) => {
+            if (err2) return res.status(500).json({ erro: err2 });
+
+            res.json({ sucesso: true, msg: "Vínculos atualizados" });
+        });
+    });
+});
+
+
+
+
 
 
 // ======================================
@@ -1394,35 +1414,6 @@ app.get("/dashboard", requireAuth, (req, res) => {
         estoque,
       });
     });
-  });
-});
-
-
-// ============================
-// PROGRAMAS / MENU DINÂMICO
-// ============================
-app.get("/programas", requireAuth, (req, res) => {
-  const perfilId = req.session.profileId;
-
-  if (!perfilId) {
-    return res.status(401).json({ error: "Perfil não encontrado na sessão" });
-  }
-
-  const sql = `
-    SELECT pr.IdPrograma, pr.NomePrograma
-    FROM ProgramaXPerfil pxp
-    JOIN Programa pr ON pxp.IdPrograma = pr.IdPrograma
-    WHERE pxp.IdPerfil = ? AND pr.CdStatus = 1
-    ORDER BY pr.NomePrograma ASC
-  `;
-
-  db.query(sql, [perfilId], (err, results) => {
-    if (err) {
-      console.error("❌ Erro ao buscar programas:", err);
-      return res.status(500).json({ error: "Erro ao buscar programas" });
-    }
-
-    res.json(results);
   });
 });
 

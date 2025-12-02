@@ -4,8 +4,7 @@ import {
   ArrowDownCircle, 
   ArrowUpCircle, 
   FileText,
-  Users,
-  Settings
+  Users
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -18,20 +17,35 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import { useAuth } from "./AuthContext";
+
+
 
 const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Produtos", url: "/produtos", icon: Package },
-  { title: "Entrada", url: "/entrada", icon: ArrowDownCircle },
-  { title: "Saída", url: "/saida", icon: ArrowUpCircle },
-  { title: "Relatórios", url: "/relatorios", icon: FileText },
-  { title: "Categorias", url: "/categorias", icon: Package },
-  { title: "Usuários", url: "/usuarios", icon: Users },
-  { title: "Perfis", url: "/perfis", icon: Users },
-  // { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Dashboard", url: "/dashboard", icon: Home, program: "Dashboard" },
+
+  { title: "Produtos", url: "/produtos", icon: Package, program: "Produto" },
+
+  { title: "Entrada", url: "/entrada", icon: ArrowDownCircle, program: "Entrada" },
+
+  { title: "Saída", url: "/saida", icon: ArrowUpCircle, program: "Saida" },
+
+  { title: "Relatórios", url: "/relatorios", icon: FileText, program: "Relatorio" },
+
+  { title: "Categorias", url: "/categorias", icon: Package, program: "Categoria" }, 
+  // ⚠ sua API não retornou "Categoria" ainda — adicione no backend!
+
+  { title: "Usuários", url: "/usuarios", icon: Users, program: "Usuario" },
+
+  { title: "Perfis", url: "/perfis", icon: Users, program: "Perfil" },
+
+  { title: "Programa x Perfil", url: "/programaxperfil", icon: Users, program: "ProgramaXPerfil" },
 ];
 
+
 export function AppSidebar() {
+  const { hasProgram } = useAuth();
+
   return (
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-6 border-b border-sidebar-border">
@@ -49,29 +63,33 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+
+              {menuItems
+                .filter(item => hasProgram(item.program))  // <= FILTRA POR PERMISSÃO
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className={({ isActive }) =>
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        }
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

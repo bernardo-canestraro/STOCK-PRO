@@ -5,49 +5,70 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthContext";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
-  e.preventDefault();
+//   const handleLogin = (e: React.FormEvent) => {
+//   e.preventDefault();
   
-  if (usuario && senha) {
-    fetch("http://localhost:3001/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include',
-      body: JSON.stringify({ username: usuario, password: senha }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          // Se a resposta não for OK, lança erro com a mensagem do servidor
-          return res.json().then(data => {
-            throw new Error(data.error || "Erro no login");
-          });
-        }
-        return res.json();
-      })
-      .then((data) => {
-        // Login bem-sucedido
-        console.log("Login realizado:", data);
+//   if (usuario && senha) {
+//     fetch("http://localhost:3001/login", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       credentials: 'include',
+//       body: JSON.stringify({ username: usuario, password: senha }),
+//     })
+//       .then((res) => {
+//         if (!res.ok) {
+//           // Se a resposta não for OK, lança erro com a mensagem do servidor
+//           return res.json().then(data => {
+//             throw new Error(data.error || "Erro no login");
+//           });
+//         }
+//         return res.json();
+//       })
+//       .then((data) => {
+//         // Login bem-sucedido
+//         console.log("Login realizado:", data);
         
-        // Salva o usuario onde o AuthProvider espera (sessionStorage "user")
-        sessionStorage.setItem("user", JSON.stringify(data));
-        // opcionais: se você usa contexto, chame o login do contexto em vez de manipular storage diretamente
-        toast.success("Login realizado com sucesso!");
-        navigate("/dashboard");
-      })
-      .catch((err) => {
-        console.error("Erro no login:", err);
-        toast.error(err.message || "Erro ao fazer login");
-      });
-  } else {
+//         // Salva o usuario onde o AuthProvider espera (sessionStorage "user")
+//         sessionStorage.setItem("user", JSON.stringify(data));
+//         // opcionais: se você usa contexto, chame o login do contexto em vez de manipular storage diretamente
+//         toast.success("Login realizado com sucesso!");
+//         navigate("/dashboard");
+//       })
+//       .catch((err) => {
+//         console.error("Erro no login:", err);
+//         toast.error(err.message || "Erro ao fazer login");
+//       });
+//   } else {
+//     toast.error("Por favor, preencha todos os campos");
+//   }
+// };
+
+const { login } = useAuth();
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!usuario || !senha) {
     toast.error("Por favor, preencha todos os campos");
+    return;
+  }
+
+  try {
+    await login(usuario, senha); // 👈 usa o AuthContext corretamente
+    toast.success("Login realizado com sucesso!");
+    navigate("/dashboard"); // 👈 redireciona
+  } catch (err: any) {
+    toast.error(err.message || "Erro ao fazer login");
   }
 };
+
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
