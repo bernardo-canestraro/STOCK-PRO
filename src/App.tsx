@@ -30,6 +30,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+
         <BrowserRouter>
           <Routes>
 
@@ -40,7 +41,7 @@ const App = () => (
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute program="Dashboard">
+                <ProtectedRoute program="dashboard">
                   <Layout><Dashboard /></Layout>
                 </ProtectedRoute>
               }
@@ -50,7 +51,7 @@ const App = () => (
             <Route
               path="/produtos"
               element={
-                <ProtectedRoute program="Produto">
+                <ProtectedRoute program="produtos">
                   <Layout><Produtos /></Layout>
                 </ProtectedRoute>
               }
@@ -60,17 +61,17 @@ const App = () => (
             <Route
               path="/entrada"
               element={
-                <ProtectedRoute program="Entrada">
+                <ProtectedRoute program="entrada">
                   <Layout><Entrada /></Layout>
                 </ProtectedRoute>
               }
             />
 
-            {/* SAIDA */}
+            {/* SAÍDA */}
             <Route
               path="/saida"
               element={
-                <ProtectedRoute program="Saida">
+                <ProtectedRoute program="saida">
                   <Layout><Saida /></Layout>
                 </ProtectedRoute>
               }
@@ -80,7 +81,7 @@ const App = () => (
             <Route
               path="/relatorios"
               element={
-                <ProtectedRoute program="Relatorio">
+                <ProtectedRoute program="relatorios">
                   <Layout><Relatorios /></Layout>
                 </ProtectedRoute>
               }
@@ -90,7 +91,7 @@ const App = () => (
             <Route
               path="/categorias"
               element={
-                <ProtectedRoute program="Categoria">
+                <ProtectedRoute program="categorias">
                   <Layout><Categorias /></Layout>
                 </ProtectedRoute>
               }
@@ -100,7 +101,7 @@ const App = () => (
             <Route
               path="/usuarios"
               element={
-                <ProtectedRoute program="Usuario">
+                <ProtectedRoute program="usuarios">
                   <Layout><Usuarios /></Layout>
                 </ProtectedRoute>
               }
@@ -110,7 +111,7 @@ const App = () => (
             <Route
               path="/perfis"
               element={
-                <ProtectedRoute program="Perfil">
+                <ProtectedRoute program="perfis">
                   <Layout><Perfis /></Layout>
                 </ProtectedRoute>
               }
@@ -120,7 +121,7 @@ const App = () => (
             <Route
               path="/programaxperfil"
               element={
-                <ProtectedRoute program="ProgramaXPerfil">
+                <ProtectedRoute program="programaxperfil">
                   <Layout><ProgramaXPerfil /></Layout>
                 </ProtectedRoute>
               }
@@ -134,6 +135,7 @@ const App = () => (
 
           </Routes>
         </BrowserRouter>
+
       </TooltipProvider>
     </QueryClientProvider>
   </AuthProvider>

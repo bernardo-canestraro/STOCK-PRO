@@ -99,6 +99,7 @@ export default function Categoria() {
       fetch(`http://localhost:3001/categoria/${editingId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include',
       body: JSON.stringify(form),
     })
     .then(async (res) => {

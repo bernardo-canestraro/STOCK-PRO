@@ -25,7 +25,7 @@ import { toast } from "@/components/ui/sonner";
 interface Perfil {
   IdPerfil?: number;
   NomePerfil: string;
-  CdStatus: string; // 'ativo' | 'inativo'  ou "1"/"0"
+  CdStatus: number; // 'ativo' | 'inativo'  ou "1"/"0"
 }
 
 export default function Perfis() {
@@ -33,7 +33,7 @@ export default function Perfis() {
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const initialForm: Perfil = { NomePerfil: "", CdStatus: "ativo" };
+  const initialForm: Perfil = { NomePerfil: "", CdStatus: 1 };
   const [form, setForm] = useState<Perfil>(initialForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -72,7 +72,7 @@ export default function Perfis() {
   };
 
   const openEdit = (p: Perfil & { IdPerfil?: number }) => { 
-    setForm({ NomePerfil: p.NomePerfil, CdStatus: String(p.CdStatus)});
+    setForm({ NomePerfil: p.NomePerfil, CdStatus: Number(p.CdStatus)});
     setEditingId(p.IdPerfil ?? null);
     setShowForm(true);
   };
@@ -90,7 +90,7 @@ export default function Perfis() {
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!form.NomePerfil.trim() ||!form.CdStatus.trim()) {
+    if (!form.NomePerfil.trim() || form.CdStatus === undefined || form.CdStatus === null) {
         toast.error("Preencha os campos do perfil.");
         return;
     }
@@ -122,16 +122,21 @@ export default function Perfis() {
       toast.error(err.message || "Erro ao atualizar perfil");
     });
     } else {
-        if (form.CdStatus.trim() === "0") {
+        if (form.CdStatus === 0) {
             toast.error("Não pode cadastrar perfil inativo.");
             return;
         }
+
+        debugger
 
       fetch("http://localhost:3001/perfis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ 
+          NomePerfil: form.NomePerfil,
+          CdStatus: Number(form.CdStatus),
+        }),
       })
         .then((res) => res.json())
         .then((created: Perfil & { IdPerfil: number }) => {
@@ -260,10 +265,10 @@ export default function Perfis() {
                         <Label htmlFor="statusForm">Status</Label>
                         <Select
                             value={form.CdStatus.toString()}
-                            onValueChange={(value: "1" | "0") => setForm({ ...form, CdStatus: value })}
+                            onValueChange={(value: "1" | "0") => setForm({ ...form, CdStatus: Number(value) })}
                         >
                         <SelectTrigger id="statusForm">
-                            {form.CdStatus === "1" ? "Ativo" : form.CdStatus === "0" ? "Inativo" : "Selecione o status"}
+                            {form.CdStatus === 1 ? "Ativo" : form.CdStatus === 0 ? "Inativo" : "Selecione o status"}
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="1">Ativo</SelectItem>

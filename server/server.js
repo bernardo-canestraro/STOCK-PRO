@@ -136,9 +136,9 @@ app.post("/login", (req, res) => {
         // Buscar permissões
         db.query(
           `SELECT pr.NomePrograma
-           FROM ProgramaXPerfil pxp
-           JOIN Programa pr ON pxp.IdPrograma = pr.IdPrograma
-           WHERE pxp.IdPerfil = ? AND pr.CdStatus = 1`,
+   FROM ProgramaXPerfil pxp
+   JOIN Programa pr ON pxp.IdPrograma = pr.IdPrograma
+   WHERE pxp.IdPerfil = ? AND pr.CdStatus = 1`,
           [user.IdPerfil],
           (err3, rows) => {
             if (err3) {
@@ -1078,24 +1078,24 @@ app.get("/perfis", requireAuth, (req, res) => {
 });
 
 app.post("/perfis", requireAuth, (req, res) => {
-  const { nome, status } = req.body;
+  const { NomePerfil, CdStatus } = req.body;
   
-  if (!nome || !status) {
-    return res.status(400).send("Todos os campos são obrigatórios");
-  }
+ if (!NomePerfil || CdStatus === undefined || CdStatus === null) {
+  return res.status(400).send("Todos os campos são obrigatórios");
+}
 
   // CORREÇÃO: Valores ajustados conforme sua especificação
   const query = "INSERT INTO Perfis (NomePerfil, IdCadastroUsu, DtCadastro, IdAlteracaoUsu, DtAlteracao, IdCCancelamentoUsu, DtCancelamento, CdStatus) VALUES (?, 1, NOW(), NULL, NULL, NULL, NULL, ?)";
   
-  db.query(query, [nome, status], (err, results) => {
+  db.query(query, [NomePerfil,Number(CdStatus)], (err, results) => {
     if (err) {
       console.error("Erro ao criar perfil:", err);
       res.status(500).send("Erro ao criar perfil");
     } else {
       const newPerfil = {
-        id: results.insertId,
-        nome,
-        status
+        IdPerfil: results.insertId,
+        NomePerfil: NomePerfil,
+        CdStatus: CdStatus
       };
       res.status(201).json(newPerfil);
     }
@@ -1105,7 +1105,6 @@ app.post("/perfis", requireAuth, (req, res) => {
 app.put("/perfis/:id", requireAuth, (req, res) => {
   const { id } = req.params;
   const { NomePerfil, CdStatus } = req.body;
-  debugger
   
   // CORREÇÃO: Verificar se os campos existem no body
   if (!NomePerfil || CdStatus === undefined || CdStatus === null) {
